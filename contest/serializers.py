@@ -1,6 +1,6 @@
 from utils.api import UsernameSerializer, serializers
 
-from .models import Contest, ContestAnnouncement, ContestRuleType
+from .models import Contest, ContestAnnouncement, ContestRuleType, ContestQuestion
 from .models import ACMContestRank, OIContestRank
 
 
@@ -112,3 +112,24 @@ class ContestSimilarResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contest
         fields = ["similarity_check_result"]
+
+
+class ContestQuestionSerializer(serializers.ModelSerializer):
+    que_auth = UsernameSerializer()
+    ans_auth = UsernameSerializer()
+
+    class Meta:
+        model = ContestQuestion
+        fields = "__all__"
+
+
+class CreateContestQuestionSerializer(serializers.Serializer):
+    problem = serializers.CharField()
+    question = serializers.CharField()
+
+
+class AnswerContestQuestionSerializer(serializers.Serializer):
+    qid = serializers.IntegerField()
+    answer = serializers.CharField(max_length=512)
+    is_public = serializers.BooleanField(default=False)
+    is_solved = serializers.BooleanField(default=False)

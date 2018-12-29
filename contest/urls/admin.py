@@ -2,10 +2,12 @@ from django.conf.urls import url
 
 from ..views.admin import ContestAnnouncementAPI, ContestAPI, ACMContestHelper, DownloadContestSubmissions, ContestCheckSimilarAPI
 
+from ..views.admin import ContestQuestionAnswerAPI
 urlpatterns = [
     url(r"^contest/?$", ContestAPI.as_view(), name="contest_admin_api"),
     url(r"^contest/announcement/?$", ContestAnnouncementAPI.as_view(), name="contest_announcement_admin_api"),
     url(r"^contest/acm_helper/?$", ACMContestHelper.as_view(), name="acm_contest_helper"),
     url(r"^download_submissions/?$", DownloadContestSubmissions.as_view(), name="acm_contest_helper"),
-    url(r"^contest_check_similar/?$", ContestCheckSimilarAPI.as_view(), name="contest_check_similar_admin_api")
+    url(r"^contest_check_similar/?$", ContestCheckSimilarAPI.as_view(), name="contest_check_similar_admin_api"),
+    url(r"^contest/answer_question/?$", ContestQuestionAnswerAPI.as_view(), name="contest_answer_question_api")
 ]
