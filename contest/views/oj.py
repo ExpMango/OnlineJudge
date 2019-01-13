@@ -13,11 +13,13 @@ from account.models import AdminType
 from account.decorators import login_required, check_contest_permission
 
 from utils.constants import ContestRuleType, ContestStatus
-from ..models import ContestAnnouncement, Contest, OIContestRank, ACMContestRank
+from ..models import ContestAnnouncement, Contest, OIContestRank, ACMContestRank, ContestQuestion
 from ..serializers import ContestAnnouncementSerializer
 from ..serializers import ContestSerializer, ContestPasswordVerifySerializer
 from ..serializers import OIContestRankSerializer, ACMContestRankSerializer
-from ..serializers import ContestSimilarResultSerializer
+from ..serializers import ContestSimilarResultSerializer, ContestQuestionSerializer, CreateContestQuestionSerializer
+
+from django.db.models import Q
 
 
 class ContestAnnouncementListAPI(APIView):
@@ -193,3 +195,38 @@ class ContestGetSimilarAPI(APIView):
         contest_id = request.GET.get("contest_id")
         contest = Contest.objects.get(id=contest_id, visible=True)
         return self.success(ContestSimilarResultSerializer(contest).data)
+
+
+class ContestQuestionAPI(APIView):
+    @check_contest_permission(check_type="question")
+    def get(self, request):
+        is_contest_admin = request.user.is_authenticated() and request.user.is_contest_admin(self.contest)
+        if is_contest_admin:
+            question_list = ContestQuestion.objects.select_related("que_auth").filter(contest=self.contest)
+        else:
+            question_list = ContestQuestion.objects.select_related("que_auth").filter(Q(contest=self.contest) & (Q(is_public=True) | Q(que_auth=request.user)))
+        return self.success(ContestQuestionSerializer(question_list, many=True).data)
+
+    @check_contest_permission(check_type="question")
+    @validate_serializer(CreateContestQuestionSerializer)
+    def post(self, request):
+        if self.contest.status != ContestStatus.CONTEST_UNDERWAY and not request.user.is_contest_admin(self.contest):
+            return self.error("Contest not running")
+        question = request.data
+        question["contest"] = self.contest
+        question["public_time"] = now()
+        question["que_auth"] = request.user
+        ContestQuestion.objects.create(**question)
+        return self.success()
+
+    @check_contest_permission(check_type="question")
+    def delete(self, request):
+        contest_question_id = request.GET.get("id")
+        if contest_question_id:
+            if request.user.is_contest_admin(self.contest):
+                ContestQuestion.objects.filter(id=contest_question_id).delete()
+            else:
+                return self.error("Have no permission to delete question")
+        else:
+            return self.error("Unknown question id")
+        return self.success()

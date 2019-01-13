@@ -98,3 +98,20 @@ class ContestAnnouncement(models.Model):
     class Meta:
         db_table = "contest_announcement"
         ordering = ("-create_time",)
+
+
+class ContestQuestion(models.Model):
+    contest = models.ForeignKey(Contest)
+    que_auth = models.ForeignKey(User, null=True, related_name="que_auth")
+    create_time = models.DateTimeField(auto_now_add=True)
+    problem = models.TextField()
+    question = models.TextField()
+    answer = models.TextField(null=True)
+    is_public = models.BooleanField(default=False)
+    public_time = models.DateTimeField()
+    is_solved = models.BooleanField(default=False)
+    ans_auth = models.ForeignKey(User, null=True, related_name="ans_auth")
+
+    class Meta:
+        db_table = "contest_question"
+        ordering = ("-public_time",)

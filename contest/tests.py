@@ -169,3 +169,54 @@ class ContestRankAPITest(APITestCase):
     def get_contest_rank(self):
         resp = self.client.get(self.url + "?contest_id=" + self.acm_contest.id)
         self.assertSuccess(resp)
+
+
+class ContestQuestionAPITest(APITestCase):
+    def setUp(self):
+        user = self.create_admin()
+        self.acm_contest = Contest.objects.create(created_by=user, **DEFAULT_CONTEST_DATA)
+        self.url = self.reverse("contest_question_api")
+
+    def create_contest_question(self):
+        response = self.client.post(self.url, data={"contest_id": self.acm_contest.id, "problem": "test_problem",
+                                                    "question": "test_question"})
+        self.assertSuccess(response)
+        return response
+
+    def get_contest_question(self):
+        response = self.client.get(self.url + "?contest_id=" + str(self.acm_contest.id))
+        return response
+
+    def test_get_contest_question(self):
+        self.create_contest_question()
+        response = self.get_contest_question()
+        self.assertSuccess(response)
+
+    def test_delete_contest_question(self):
+        self.create_contest_question()
+        pre_response = self.get_contest_question()
+        target_id = pre_response.data["data"][0]["id"]
+        data = self.client.delete(self.url + "?contest_id=" + str(self.acm_contest.id) +
+                                  "&id=" + str(target_id))
+        response = self.get_contest_question()
+        self.assertSuccess(data)
+        del_status = True
+        for _ in response.data["data"]:
+            if _["id"] == target_id:
+                del_status = False
+        self.assertEqual(del_status, True)
+
+    def test_answer_contest_question(self):
+        self.create_contest_question()
+        pre_get_response = self.get_contest_question()
+        question_id = pre_get_response.data["data"][0]["id"]
+        answer_url = self.reverse("contest_answer_question_api")
+        response = self.client.put(answer_url, data={"contest_id": self.acm_contest.id, "qid": question_id,
+                                                     "answer": "123456", "is_public": True, "is_solved": True})
+        get_response = self.get_contest_question()
+        answer = ""
+        for _ in get_response.data["data"]:
+            if _["id"] == question_id:
+                answer = _["answer"]
+        self.assertSuccess(response)
+        self.assertEqual(answer, "123456")

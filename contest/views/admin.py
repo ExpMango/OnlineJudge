@@ -24,6 +24,10 @@ from ..serializers import (ContestAnnouncementSerializer, ContestAdminSerializer
                            ACMContesHelperSerializer, )
 from account.decorators import super_admin_required
 
+from ..models import ContestQuestion
+from ..serializers import AnswerContestQuestionSerializer
+from django.utils.timezone import now
+
 
 class ContestAPI(APIView):
     @validate_serializer(CreateConetestSeriaizer)
@@ -310,4 +314,26 @@ class ContestCheckSimilarAPI(APIView):
         contest.similarity_check_result = data_to_write
         contest.save()
 
+        return self.success()
+
+
+class ContestQuestionAnswerAPI(APIView):
+    @check_contest_permission(check_type="answer")
+    @validate_serializer(AnswerContestQuestionSerializer)
+    def put(self, request):
+        data = request.data
+        is_contest_admin = request.user.is_authenticated() and request.user.is_contest_admin(self.contest)
+        if not is_contest_admin:
+            return self.error("Have no permission to answer")
+        question = ContestQuestion.objects.get(id=data.pop("qid"), contest=self.contest)
+        if not question:
+            return self.error("Have no such Question")
+
+        question.ans_auth = request.user
+        question.is_solved = data["is_solved"]
+        question.is_public = data["is_public"]
+        question.answer = data["answer"]
+        if data["is_public"]:
+            question.public_time = now()
+        question.save()
         return self.success()
