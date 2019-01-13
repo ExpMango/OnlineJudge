@@ -210,6 +210,8 @@ class ContestQuestionAPI(APIView):
     @check_contest_permission(check_type="question")
     @validate_serializer(CreateContestQuestionSerializer)
     def post(self, request):
+        if self.contest.status != ContestStatus.CONTEST_UNDERWAY and not request.user.is_contest_admin(self.contest):
+            return self.error("Contest not running")
         question = request.data
         question["contest"] = self.contest
         question["public_time"] = now()
